@@ -118,10 +118,23 @@
         <h2> Lo que esta página obtuvo de ti automáticamente</h2>
         <div class="grid" id="dataGrid"></div>
 
+        <div class="note" style="margin-top:18px">
+          <b>Ahora probemos algo que necesita tu permiso explícito.</b><br>
+          Si una página pide acceso a tu ubicación y le das <b>"Permitir"</b> sin pensarlo,
+          esto es lo que puede obtener (tu posición exacta, no solo tu ciudad por IP):
+        </div>
+
         <div class="actions">
+          <button class="btn-ghost" id="gpsBtn">📍 Prueba de GPS (requiere tu permiso)</button>
+        </div>
+        <div class="grid" id="gpsGrid" style="margin-top:10px"></div>
+
+        <div class="actions" style="margin-top:18px">
           <button class="btn-ghost" id="downloadBtn">Descargar reporte (.txt)</button>
           <button id="againBtn">↺ Reiniciar demo</button>
         </div>
+
+        <audio id="gatoSound" src="gato-riendo.mp3" preload="auto"></audio>
       </div>
     </div>
   </div>
@@ -228,6 +241,47 @@ document.getElementById("form").addEventListener("submit", async function(e){
   document.getElementById("loginWrap").style.display = "none";
   document.getElementById("gotcha").classList.add("show");
   window.scrollTo(0,0);
+
+  const sound = document.getElementById("gatoSound");
+  sound.currentTime = 0;
+  sound.play().catch(()=>{});
+});
+
+function setGpsRow(k, v){
+  const grid = document.getElementById("gpsGrid");
+  const row = document.createElement("div");
+  row.className = "row";
+  row.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>`;
+  grid.appendChild(row);
+}
+
+document.getElementById("gpsBtn").addEventListener("click", function(){
+  const grid = document.getElementById("gpsGrid");
+  grid.innerHTML = "";
+  const btn = this;
+  btn.textContent = "Pidiendo permiso...";
+
+  if(!navigator.geolocation){
+    setGpsRow("Resultado", "Tu navegador no soporta geolocalización");
+    btn.textContent = "📍 Prueba de GPS (requiere tu permiso)";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      const c = pos.coords;
+      setGpsRow("Latitud", c.latitude);
+      setGpsRow("Longitud", c.longitude);
+      setGpsRow("Precisión", "±" + Math.round(c.accuracy) + " metros");
+      setGpsRow("Ver en el mapa", `<a href="https://www.google.com/maps?q=${c.latitude},${c.longitude}" target="_blank" rel="noopener">Abrir ubicación exacta</a>`);
+      btn.textContent = "📍 Prueba de GPS (requiere tu permiso)";
+    },
+    function(err){
+      setGpsRow("Resultado", "Permiso denegado o no disponible: " + err.message);
+      btn.textContent = "📍 Prueba de GPS (requiere tu permiso)";
+    },
+    { enableHighAccuracy:true, timeout:10000 }
+  );
 });
 
 document.getElementById("downloadBtn").addEventListener("click", function(){
@@ -243,6 +297,10 @@ document.getElementById("againBtn").addEventListener("click", function(){
   document.getElementById("loginWrap").style.display = "block";
   document.getElementById("form").reset();
   document.getElementById("form").querySelector("button").textContent = "Acceder y descargar material";
+  document.getElementById("gpsGrid").innerHTML = "";
+  const sound = document.getElementById("gatoSound");
+  sound.pause();
+  sound.currentTime = 0;
 });
 </script>
 </body>
